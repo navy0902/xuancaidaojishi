@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<style type="text/css">
+		canvas{
+			position:absolute;
+			margin:auto;
+			display:block;
+			top:0px;
+			left:0px;
+			right:0px;
+			bottom:0px;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+
+	<script src="digit.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		//canvas的大小
+		var canvasWidth=1000;
+		var canvasHeight=600;
+		//圆点的半径
+		var radius=6;
+
+		//canvas绘制的起始位置
+		var marginLeft=120;
+		var marginTop=40;
+
+		//倒计时的时间            js的月份从0开始
+		var endTime=new Date(2016,11,20,13,30,0);
+
+		//跳动的小球
+		var balls=[];
+
+		//计算时间差
+		var disTime=0; 
+		var curTime=new Date();           //换算成秒
+		disTime=Math.round((endTime.getTime()-curTime.getTime())/1000);
+		
+		var canvas=document.getElementById('canvas');
+		var context=canvas.getContext("2d");
+
+		//设置canvas的大小
+		canvas.width=canvasWidth;
+		canvas.height=canvasHeight;
+		
+
+		//画点
+		window.setInterval(function(){
+			/*var curTime=new Date();           //换算成秒
+			disTime=Math.round((endTime.getTime()-curTime.getTime())/1000);*/
+			//得到下一个时间
+			var nextTime=new Date();
+			var nextDisTime=Math.round((endTime.getTime()-nextTime.getTime())/1000);
+
+			//时分秒
+			var nextHours=parseInt(nextDisTime/3600);
+			var nextMins=parseInt((nextDisTime-nextHours*3600)/60);
+			var nextSecs=nextDisTime%60;
+
+			//当前的时间的时分秒
+			var curHours=parseInt(disTime/3600);
+			var curMins=parseInt((disTime-curHours*3600)/60);
+			var curSecs=disTime%60;
+
+			if(nextSecs!=curSecs){
+				//判断时 分 的改变
+				if( parseInt(curHours/10) != parseInt(nextHours/10) ){
+					//添加球
+					addBall(marginLeft,marginTop,parseInt(curHours/10));
+				}
+				if( parseInt(curHours%10) != parseInt(nextHours%10) ){
+					//添加球
+					addBall(marginLeft+15*(radius+1),marginTop,parseInt(curHours%10));
+				}
+				if( parseInt(curMins/10) != parseInt(nextMins/10) ){
+					//添加球
+					addBall(marginLeft+39*(radius+1),marginTop,parseInt(curMins/10));
+				}
+				if( parseInt(curMins%10) != parseInt(nextMins%10) ){
+					//添加球
+					addBall(marginLeft+54*(radius+1),marginTop,parseInt(curMins%10));
+				}
+				if( parseInt(curSecs/10) != parseInt(nextSecs/10) ){
+					//添加球
+					addBall(marginLeft+78*(radius+1),marginTop,parseInt(curSecs/10));
+				}
+				if( parseInt(curSecs%10) != parseInt(nextSecs%10) ){
+					//添加球
+					addBall(marginLeft+93*(radius+1),marginTop,parseInt(nextSecs%10));
+				}
+				//时间替换
+				disTime=nextDisTime;
+			}
+
+			draw(context);
+
+			//球开始运动
+			updateBalls();
+
+			console.log(balls.length);
+		},50);
+
+		function updateBalls(){
+			for(var i=0;i<balls.length;i++){
+				//改变球的位置
+				balls[i].x+=balls[i].vx;
+				balls[i].y+=balls[i].vy;
+				balls[i].vy+=balls[i].g;    //重力加速度的影响
+
+				//碰撞检测
+				if( balls[i].y >= canvasHeight-radius ){
+					balls[i].y=canvasHeight-radius;
+					balls[i].vy=-balls[i].vy*0.6;   //空气阻力系数
+				}
+			}
+
+			//如果一直运行下去,会卡,动画优化
+			var count=0;
+			for(var i=0;i<balls.length;i++){
+				if(balls[i].x+radius > 0 && balls[i].x-radius<canvasWidth){
+					//说明你在这个屏幕里面
+					balls[count++]=balls[i];
+				}
+			}
+
+			while(balls.length>count){
+				balls.pop();
+			}
+		}
+
+		function addBall(x,y,num){
+			for(var i=0;i<digit[num].length;i++){
+				for(var j=0;j<digit[num][i].length;j++){
+					//取数字,判断是1就画
+					if(digit[num][i][j]==1){
+						//在这个点的位置产生一个球,添加到数组里面去
+						var ball={
+							x:x+j*2*(radius+1)+radius,
+							y:y+i*2*(radius+1)+radius,
+							g:1.5 + Math.random(),        //数字越大随机越是接近50%
+							vx:Math.pow(-1,Math.ceil(Math.random()*10000))*4,
+							vy:-5,
+							color:"rgb("+Math.floor(Math.random()*256)+","+Math.floor(Math.random()*256)+","+Math.floor(Math.random()*256)+")"
+						};
+						balls.push(ball);
+						
+					}
+				}
+			}
+		}
+
+		function draw(context){
+			//先清除画布
+			context.clearRect(0,0,canvasWidth,canvasHeight);
+
+			var hours=parseInt(disTime/3600);
+			var mins=parseInt((disTime-hours*3600)/60);
+			var secs=disTime%60;
+
+			//具体画点的方法 
+			        //起始的位置 x轴 y轴   画的数字
+			drawDigit(marginLeft,marginTop,parseInt(hours/10),context);
+			//第二个数字
+			drawDigit(marginLeft+15*(radius+1),marginTop,parseInt(hours%10),context);
+			//画冒号
+			drawDigit(marginLeft+30*(radius+1),marginTop,10,context);
+			//画分钟
+			drawDigit(marginLeft+39*(radius+1),marginTop,parseInt(mins/10),context);
+			drawDigit(marginLeft+54*(radius+1),marginTop,parseInt(mins%10),context);
+			drawDigit(marginLeft+69*(radius+1),marginTop,10,context);
+			//画秒
+			drawDigit(marginLeft+78*(radius+1),marginTop,parseInt(secs/10),context);
+			drawDigit(marginLeft+93*(radius+1),marginTop,parseInt(secs%10),context);
+
+
+			//画球
+			for(var i=0;i<balls.length;i++){
+				context.fillStyle=balls[i].color;
+				context.beginPath();
+				context.arc(balls[i].x, balls[i].y, radius, 0,2*Math.PI,false);
+				context.closePath();
+				context.fill();
+			}
+		}
+
+		function drawDigit(x,y,num,context){
+			context.fillStyle="red";
+
+			//因为我们的数字是一个二维数组,所以双重循环
+			for(var i=0;i<digit[num].length;i++){
+				for(var j=0;j<digit[num][i].length;j++){
+					//取数字,判断是1就画
+					if(digit[num][i][j]==1){
+						//画圆点
+						context.beginPath();
+						//第一个圆点的起始点:x+radius -> x+2*radius+2+radius -> x+4*radius+4+radius
+						context.arc(x+j*2*(radius+1)+radius, y+i*2*(radius+1)+radius, radius, 0,2*Math.PI,false);
+						context.closePath();
+						context.fill();
+					}
+				}
+			}
+		}
+	</script>
+</body>
+</html>
